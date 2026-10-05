@@ -51,41 +51,54 @@ async function startScanner() {
     useBarCodeDetectorIfSupported: true,
     verbose: false
   });
-  try {
-    await scanner.start(
-      { facingMode: "environment" },
-      {
-        fps: 15,
-        // no qrbox: scans the whole camera frame, which is better for small barcodes
-        videoConstraints: {
-          facingMode: "environment",
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-          advanced: [{ focusMode: "continuous" }]
-        }
-      },
-      (text) => {
-        const now = Date.now();
-        if (text === lastScan && now - lastTime < 3000) return;
-        lastScan = text; lastTime = now;
-        handleId(text);
-      },
-      () => {}
-    );
-    running = true;
-    $("startBtn").hidden = true; $("stopBtn").hidden = false;
-    setStatus("Point the camera at the barcode.");
 
-    // Zoom slider (shows only on phones/browsers that support zoom)
+  const onScan = (text) => {
+    const now = Date.now();
+    if (text === lastScan && now - lastTime < 3000) return;
+    lastScan = text; lastTime = now;
+    handleId(text);
+  };
+
+  // Try high quality first, then fall back to a simple setup
+  const attempts = [
+    { fps: 15, videoConstraints: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } } },
+    { fps: 10 }
+  ];
+
+  let started = false, lastErr = null;
+  for (const cfg of attempts) {
+    try {
+      await scanner.start({ facingMode: "environment" }, cfg, onScan, () => {});
+      started = true;
+      break;
+    } catch (e) {
+      lastErr = e;
+      console.error("Camera start failed:", e);
+    }
+  }
+
+  if (!started) {
+    const name = (lastErr && (lastErr.name || lastErr.message || String(lastErr))) || "Unknown error";
+    setStatus("Could not open the camera (" + name + "). Allow camera access, use https://, and open this page in Chrome or Safari.", true);
+    return;
+  }
+
+  running = true;
+  $("startBtn").hidden = true; $("stopBtn").hidden = false;
+  setStatus("Point the camera at the barcode.");
+
+  // Try continuous autofocus (ignored if the phone doesn't support it)
+  try { await scanner.applyVideoConstraints({ advanced: [{ focusMode: "continuous" }] }); } catch (e) {}
+
+  // Zoom slider (shows only where supported)
+  try {
     const caps = scanner.getRunningTrackCapabilities();
     if (caps.zoom) {
       const z = $("zoom");
       z.min = caps.zoom.min; z.max = caps.zoom.max; z.step = caps.zoom.step || 0.1;
       z.value = scanner.getRunningTrackSettings().zoom || caps.zoom.min;
-      $("zoomWrap").hidden = true;
+      $("zoomWrap").hidden = false;
       z.oninput = () => scanner.applyVideoConstraints({ advanced: [{ zoom: Number(z.value) }] });
     }
-  } catch (err) {
-    setStatus("Could not open the camera. Allow camera access and make sure the page uses https://", true);
-  }
+  } catch (e) {}
 }
