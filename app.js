@@ -54,33 +54,38 @@ async function startScanner() {
   try {
     await scanner.start(
       { facingMode: "environment" },
-      { fps: 10, qrbox: (w) => ({ width: Math.floor(w * 0.9), height: Math.floor(w * 0.4) }) },
+      {
+        fps: 15,
+        // no qrbox: scans the whole camera frame, which is better for small barcodes
+        videoConstraints: {
+          facingMode: "environment",
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+          advanced: [{ focusMode: "continuous" }]
+        }
+      },
       (text) => {
         const now = Date.now();
-        if (text === lastScan && now - lastTime < 3000) return; // ignore repeat reads
+        if (text === lastScan && now - lastTime < 3000) return;
         lastScan = text; lastTime = now;
         handleId(text);
       },
-      () => {} // per-frame "no barcode found" noise, ignore
+      () => {}
     );
     running = true;
     $("startBtn").hidden = true; $("stopBtn").hidden = false;
     setStatus("Point the camera at the barcode.");
+
+    // Zoom slider (shows only on phones/browsers that support zoom)
+    const caps = scanner.getRunningTrackCapabilities();
+    if (caps.zoom) {
+      const z = $("zoom");
+      z.min = caps.zoom.min; z.max = caps.zoom.max; z.step = caps.zoom.step || 0.1;
+      z.value = scanner.getRunningTrackSettings().zoom || caps.zoom.min;
+      $("zoomWrap").hidden = true;
+      z.oninput = () => scanner.applyVideoConstraints({ advanced: [{ zoom: Number(z.value) }] });
+    }
   } catch (err) {
     setStatus("Could not open the camera. Allow camera access and make sure the page uses https://", true);
   }
 }
-
-async function stopScanner() {
-  if (!running) return;
-  await scanner.stop(); scanner.clear();
-  running = false;
-  $("startBtn").hidden = false; $("stopBtn").hidden = true;
-  setStatus("Camera stopped.");
-}
-
-$("startBtn").onclick = startScanner;
-$("stopBtn").onclick = stopScanner;
-$("manualBtn").onclick = () => handleId($("manual").value);
-$("manual").addEventListener("keydown", e => { if (e.key === "Enter") handleId(e.target.value); });
-$("auto").checked = CONFIG.autoOpen;
