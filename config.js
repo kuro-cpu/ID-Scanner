@@ -4,8 +4,8 @@
    const CONFIG = {
 
     destinations: [
-      { label: "View study load", url: "https://example.edu/portal/study-load?student={ID}" },
-      { label: "School website",  url: "https://example.edu" }          // no {ID} = plain link
+      { label: "View study load", url: "https://serp.uv.edu.ph/SERP/Student/Main.aspx?_sid=25210043" },
+      { label: "UV Blackboard",  url: "https://uv.blackboard.com/ultra/course" }          // no {ID} = plain link
     ],
   
     idPattern: /^[\w-]{4,20}$/,
