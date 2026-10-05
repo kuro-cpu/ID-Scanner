@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>School ID Scanner</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header>
+  <h1>School ID Scanner</h1>
+  <p>Scan the barcode on a student ID to open their records.</p>
+</header>
+
+<main>
+  <section class="card">
+    <div id="reader"></div>
+    <div class="row">
+      <button id="startBtn" class="primary">Start camera</button>
+      <button id="stopBtn" class="ghost" hidden>Stop camera</button>
+    </div>
+    <p id="status" role="status" aria-live="polite"></p>
+  </section>
+
+  <section class="card">
+    <label for="manual">Camera not working? Type the ID number</label>
+    <input id="manual" type="text" inputmode="numeric" autocomplete="off" placeholder="e.g. 2023-00123">
+    <div class="row"><button id="manualBtn" class="ghost">Use this ID</button></div>
+  </section>
+
+  <section class="card" id="result" hidden>
+    <div>Scanned ID</div>
+    <p id="idValue"></p>
+    <div class="row" id="links"></div>
+    <label class="switch"><input type="checkbox" id="auto"> Open the first destination automatically after each scan</label>
+  </section>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
